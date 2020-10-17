@@ -47,7 +47,7 @@ func newOrden(tipo string,nombre string,valor int,origen string, destino string,
 	return &ordenNueva
 }
 
-type registroPorCamion struct {
+type entradaRegistroPorCamion struct {
 	idPaquete string
 	tipo string
 	valor int
@@ -58,57 +58,85 @@ type registroPorCamion struct {
 
 }
 
+func newEntrada(idPaquete string, tipo string, valor int,origen string,destino string) *entradaRegistroPorCamion{
+	entrada := entradaRegistroPorCamion{idPaquete: idPaquete, tipo: tipo,valor: valor,origen : origen,destino : destino}
+	entrada.intentos = 0
+	return &entrada
+}
 
 type camion struct{
 	tipo string
 	estado string
-	carga [2]paquete
+	regi []entradaRegistroPorCamion
+	carga []int
+	cargaLenght int
 }
 
 func newCamion(tipo string) *camion{
-	camionNuevo := camion{tipo : tipo,estado : "Central",carga : [2]paquete{}}
+	camionNuevo := camion{tipo : tipo,estado : "Central",cargaLenght : 0}
 	return &camionNuevo
 
 }
 
-func camionLaborando(tipo string){
+
+func camionLaborando(tipo string,waitFor2 time.Duration){
 	camionp := newCamion(tipo)
-	cargaLenght := 0
+	startwait := time.Now()
+	first := 1
 	s := rand.NewSource(time.Now().UnixNano())
     r := rand.New(s)
 	fmt.Println(camionp.tipo)
 	for {
+		fmt.Println("camionp.tipo")
 		if camionp.estado == "Central" {
 			//pedir
 			if true { // si salio bien el pedir
-				camionp.carga[0] =  *newPaquete("idPaquete string", "tipo string", 10)
-				cargaLenght = cargaLenght + 1
-				if cargaLenght == 2 {
-					camionp.estado = "Reparto"
-					//elegir orden
+				camionp.regi = append(camionp.regi, *newEntrada("idPaquete string", "tipo string", 10,"micasa","tucasa"))
+				camionp.carga = append(camionp.carga,len(camionp.regi)-1)
+				if camionp.cargaLenght == 0{
+					startwait := time.Now()
 				}
-				fmt.Println(camionp.carga[0])
+				camionp.cargaLenght = camionp.cargaLenght + 1
+				if camionp.cargaLenght == 2 {
+					camionp.estado = "Reparto"
+					first = 1
+					//elegir orden
+				} else if camionp.cargaLenght == 1 && time.Now().Sub(startwait).Seconds() > waitFor2  {
+					
+				}
+				fmt.Println(camionp.regi[0])
 			}
 		} else {
 			//elegir paquete con mayor digni
-			//aumentar intento en 1
-			recibido = r.Intn(100)
+			paqueteEnEntrega := camionp.carga[0]
+			if camionp.cargaLenght > 1 {
+
+				if camionp.regi[camionp.carga[0]].valor * first < camionp.regi[camionp.carga[1]].valor * first {
+					paqueteEnEntrega = camionp.carga[1]
+
+				}
+			}
+			camionp.regi[paqueteEnEntrega].intentos = camionp.regi[paqueteEnEntrega].intentos + 1
+			recibido := r.Intn(100)
+			fmt.Println(recibido)
 			if recibido < 80 {
-				cargaLenght = cargaLenght - 1
-				if cargaLenght == 0 {
+				camionp.cargaLenght = camionp.cargaLenght - 1
+				if camionp.cargaLenght == 0 {
 					camionp.estado = "Central"
 				}
 
 
 		     } else {
-		     	//cambiar a otro paquete
+		     	first = -first
 		     }
 		
-	}
+	    }
+    }
+
 }
  func main() {
 
- 	waitFor2 := 30
+ 	waitFor2 := 30 
 
 	if len(os.Args) > 1 {
 		wait,err := strconv.Atoi(os.Args[1])
@@ -116,7 +144,7 @@ func camionLaborando(tipo string){
 			wait = 30
 		}
 		waitFor2 = wait
-		camionLaborando("normal")
+		camionLaborando("normal",waitFor2)
 	} 
     
 	fmt.Println(waitFor2)
