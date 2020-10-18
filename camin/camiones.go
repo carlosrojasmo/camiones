@@ -62,8 +62,8 @@ func camionLaborando(tipo string,waitFor2 float64){
 	defer conn.Close()
 	c := pb.NewCamionDeliveryClient(conn)
 
-    ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+    //ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	//defer cancel()
 	camionp := newCamion(tipo)
 	startwait := time.Now()
 	first := 1
@@ -77,7 +77,9 @@ func camionLaborando(tipo string,waitFor2 float64){
 		if camionp.estado == "Central" {
 			//pedir
 			time.Sleep(4 * time.Second)
-			r, err := c. GetPack(ctx, &pb.AskForPack{Tipo : camionp.tipo})
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			r, err := c.GetPack(ctx, &pb.AskForPack{Tipo : camionp.tipo})
 	        if err != nil {
 	        	fmt.Println("could not greet")
 	        }
@@ -138,7 +140,9 @@ func camionLaborando(tipo string,waitFor2 float64){
 		     	camionp.estado = "Central"
 		     	for i := 0; i < len(cargaEntregada); i++ {
 		     		time.Sleep(2 * time.Second)
-		     		r, err := c. Report(ctx, &pb.ReportDelivery{IdPaquete : camionp.regi[cargaEntregada[i]].idPaquete,
+		     		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			        defer cancel()
+		     		r, err := c.Report(ctx, &pb.ReportDelivery{IdPaquete : camionp.regi[cargaEntregada[i]].idPaquete,
 		     		 Entregado : true , Intentos : int64(camionp.regi[cargaEntregada[i]].intentos)})
 		     		fmt.Println(r)
 		     		if err != nil {
@@ -147,7 +151,9 @@ func camionLaborando(tipo string,waitFor2 float64){
 		     	}
 		     	for j := 0; j < len(cargaNoEntregada); j++ {
 		     		time.Sleep(2 * time.Second)
-		     		r, err := c. Report(ctx, &pb.ReportDelivery{IdPaquete : camionp.regi[cargaNoEntregada[j]].idPaquete,
+		     		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			        defer cancel()
+		     		r, err := c.Report(ctx, &pb.ReportDelivery{IdPaquete : camionp.regi[cargaNoEntregada[j]].idPaquete,
 		     		 Entregado : false ,Intentos : int64(camionp.regi[cargaNoEntregada[j]].intentos)})
 		     		fmt.Println(r)
 		     		if err != nil {
@@ -166,6 +172,8 @@ func camionLaborando(tipo string,waitFor2 float64){
 
  	waitFor2 := 30 
 
+ 	fmt.Println(waitFor2)
+
 	if len(os.Args) > 1 {
 		wait,err := strconv.Atoi(os.Args[1])
 		if err != nil {
@@ -173,6 +181,8 @@ func camionLaborando(tipo string,waitFor2 float64){
 		}
 		waitFor2 = wait
 	}
+
+	fmt.Println(waitFor2)
 
 	wg.Add(1)
 	go camionLaborando("normal",float64(waitFor2)) 
