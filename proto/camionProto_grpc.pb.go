@@ -13,121 +13,121 @@ import (
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion7
 
-// OrdenServiceClient is the client API for OrdenService service.
+// CamionDeliveryClient is the client API for CamionDelivery service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type OrdenServiceClient interface {
+type CamionDeliveryClient interface {
 	GetPack(ctx context.Context, in *AskForPack, opts ...grpc.CallOption) (*SendPack, error)
 	Report(ctx context.Context, in *ReportDelivery, opts ...grpc.CallOption) (*ReportOk, error)
 }
 
-type ordenServiceClient struct {
+type camionDeliveryClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewOrdenServiceClient(cc grpc.ClientConnInterface) OrdenServiceClient {
-	return &ordenServiceClient{cc}
+func NewCamionDeliveryClient(cc grpc.ClientConnInterface) CamionDeliveryClient {
+	return &camionDeliveryClient{cc}
 }
 
-func (c *ordenServiceClient) GetPack(ctx context.Context, in *AskForPack, opts ...grpc.CallOption) (*SendPack, error) {
+func (c *camionDeliveryClient) GetPack(ctx context.Context, in *AskForPack, opts ...grpc.CallOption) (*SendPack, error) {
 	out := new(SendPack)
-	err := c.cc.Invoke(ctx, "/proto.OrdenService/getPack", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.CamionDelivery/getPack", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ordenServiceClient) Report(ctx context.Context, in *ReportDelivery, opts ...grpc.CallOption) (*ReportOk, error) {
+func (c *camionDeliveryClient) Report(ctx context.Context, in *ReportDelivery, opts ...grpc.CallOption) (*ReportOk, error) {
 	out := new(ReportOk)
-	err := c.cc.Invoke(ctx, "/proto.OrdenService/report", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.CamionDelivery/report", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// OrdenServiceServer is the server API for OrdenService service.
-// All implementations must embed UnimplementedOrdenServiceServer
+// CamionDeliveryServer is the server API for CamionDelivery service.
+// All implementations must embed UnimplementedCamionDeliveryServer
 // for forward compatibility
-type OrdenServiceServer interface {
+type CamionDeliveryServer interface {
 	GetPack(context.Context, *AskForPack) (*SendPack, error)
 	Report(context.Context, *ReportDelivery) (*ReportOk, error)
-	mustEmbedUnimplementedOrdenServiceServer()
+	mustEmbedUnimplementedCamionDeliveryServer()
 }
 
-// UnimplementedOrdenServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedOrdenServiceServer struct {
+// UnimplementedCamionDeliveryServer must be embedded to have forward compatible implementations.
+type UnimplementedCamionDeliveryServer struct {
 }
 
-func (UnimplementedOrdenServiceServer) GetPack(context.Context, *AskForPack) (*SendPack, error) {
+func (UnimplementedCamionDeliveryServer) GetPack(context.Context, *AskForPack) (*SendPack, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPack not implemented")
 }
-func (UnimplementedOrdenServiceServer) Report(context.Context, *ReportDelivery) (*ReportOk, error) {
+func (UnimplementedCamionDeliveryServer) Report(context.Context, *ReportDelivery) (*ReportOk, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Report not implemented")
 }
-func (UnimplementedOrdenServiceServer) mustEmbedUnimplementedOrdenServiceServer() {}
+func (UnimplementedCamionDeliveryServer) mustEmbedUnimplementedCamionDeliveryServer() {}
 
-// UnsafeOrdenServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to OrdenServiceServer will
+// UnsafeCamionDeliveryServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to CamionDeliveryServer will
 // result in compilation errors.
-type UnsafeOrdenServiceServer interface {
-	mustEmbedUnimplementedOrdenServiceServer()
+type UnsafeCamionDeliveryServer interface {
+	mustEmbedUnimplementedCamionDeliveryServer()
 }
 
-func RegisterOrdenServiceServer(s *grpc.Server, srv OrdenServiceServer) {
-	s.RegisterService(&_OrdenService_serviceDesc, srv)
+func RegisterCamionDeliveryServer(s *grpc.Server, srv CamionDeliveryServer) {
+	s.RegisterService(&_CamionDelivery_serviceDesc, srv)
 }
 
-func _OrdenService_GetPack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CamionDelivery_GetPack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AskForPack)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(OrdenServiceServer).GetPack(ctx, in)
+		return srv.(CamionDeliveryServer).GetPack(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.OrdenService/GetPack",
+		FullMethod: "/proto.CamionDelivery/GetPack",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrdenServiceServer).GetPack(ctx, req.(*AskForPack))
+		return srv.(CamionDeliveryServer).GetPack(ctx, req.(*AskForPack))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _OrdenService_Report_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _CamionDelivery_Report_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ReportDelivery)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(OrdenServiceServer).Report(ctx, in)
+		return srv.(CamionDeliveryServer).Report(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.OrdenService/Report",
+		FullMethod: "/proto.CamionDelivery/Report",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrdenServiceServer).Report(ctx, req.(*ReportDelivery))
+		return srv.(CamionDeliveryServer).Report(ctx, req.(*ReportDelivery))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _OrdenService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.OrdenService",
-	HandlerType: (*OrdenServiceServer)(nil),
+var _CamionDelivery_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.CamionDelivery",
+	HandlerType: (*CamionDeliveryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "getPack",
-			Handler:    _OrdenService_GetPack_Handler,
+			Handler:    _CamionDelivery_GetPack_Handler,
 		},
 		{
 			MethodName: "report",
-			Handler:    _OrdenService_Report_Handler,
+			Handler:    _CamionDelivery_Report_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "camionProto.proto",
+	Metadata: "proto/camionProto.proto",
 }
