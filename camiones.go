@@ -79,7 +79,7 @@ func newCamion(tipo string) *camion{
 }
 
 
-func camionLaborando(tipo string,waitFor2 time.Duration){
+func camionLaborando(tipo string,waitFor2 float64){
 	camionp := newCamion(tipo)
 	startwait := time.Now()
 	first := 1
@@ -94,14 +94,18 @@ func camionLaborando(tipo string,waitFor2 time.Duration){
 				camionp.regi = append(camionp.regi, *newEntrada("idPaquete string", "tipo string", 10,"micasa","tucasa"))
 				camionp.carga = append(camionp.carga,len(camionp.regi)-1)
 				if camionp.cargaLenght == 0{
-					startwait := time.Now()
+					startwait = time.Now()
 				}
 				camionp.cargaLenght = camionp.cargaLenght + 1
 				if camionp.cargaLenght == 2 {
 					camionp.estado = "Reparto"
 					first = 1
 					//elegir orden
-				} else if camionp.cargaLenght == 1 && time.Now().Sub(startwait).Seconds() > waitFor2  {
+				} else if camionp.cargaLenght == 1 {
+					dif :=  time.Now().Sub(startwait)
+					if dif.Seconds() > waitFor2  {
+
+					}
 					
 				}
 				fmt.Println(camionp.regi[0])
@@ -144,7 +148,7 @@ func camionLaborando(tipo string,waitFor2 time.Duration){
 			wait = 30
 		}
 		waitFor2 = wait
-		camionLaborando("normal",waitFor2)
+		camionLaborando("normal",float64(waitFor2))
 	} 
     
 	fmt.Println(waitFor2)
