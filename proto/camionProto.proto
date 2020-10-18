@@ -3,7 +3,7 @@ syntax = "proto3";
 
 package proto; 
 
-service OrdenService {
+service CamionDelivery {
   rpc getPack(askForPack) returns (sendPack);
   rpc report(reportDelivery) returns (reportOk);
 }
