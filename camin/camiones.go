@@ -85,9 +85,11 @@ func camionLaborando(tipo string,waitFor2 float64){
 	        if err != nil {
 	        	log.Fatalf("could not greet: %v", err)
 	        }
-			if err == nil && r.GetIdPaquete() != "400" { // si salio bien el pedir
+	        fmt.Println(camionp.regi)
+			if err == nil && r.GetIdPaquete() != "400" && r.GetIdPaquete() != ""{ // si salio bien el pedir
 				camionp.regi = append(camionp.regi, *newEntrada(r.IdPaquete, r.Tipo, r.Valor,r.Origen,r.Destino))
 				camionp.carga = append(camionp.carga,len(camionp.regi)-1)
+				fmt.Println(len(camionp.regi)-1)
 				if camionp.cargaLenght == 0{
 					startwait = time.Now()
 				}
@@ -108,30 +110,30 @@ func camionLaborando(tipo string,waitFor2 float64){
 			}
 		} else {
 			//elegir paquete con mayor digni
-			paqueteEnEntrega := camionp.carga[0]
+			paqueteEnEntrega := 0
 			if camionp.cargaLenght > 1 {
 
 				if camionp.regi[camionp.carga[0]].valor * first < camionp.regi[camionp.carga[1]].valor * first {
-					paqueteEnEntrega = camionp.carga[1]
+					paqueteEnEntrega = 1
 
 				}
 			}
-			camionp.regi[paqueteEnEntrega].intentos = camionp.regi[paqueteEnEntrega].intentos + 1
+			camionp.regi[camionp.carga[paqueteEnEntrega]].intentos = camionp.regi[camionp.carga[paqueteEnEntrega]].intentos + 1
 			time.Sleep(10 * time.Second)
 			recibido := r.Intn(100)
 			fmt.Println(recibido)
 			if recibido < 80 {
 				camionp.cargaLenght = camionp.cargaLenght - 1
-				cargaEntregada = append(cargaEntregada,paqueteEnEntrega)
+				cargaEntregada = append(cargaEntregada,camionp.carga[paqueteEnEntrega])
 				camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1] 
 				camionp.carga[len(camionp.carga)-1] = 0   
 				camionp.carga = camionp.carga[:len(camionp.carga)-1] 
 		     } else {
-		     	tipoPaq := camionp.regi[paqueteEnEntrega].tipo
-		     	intentPaq := camionp.regi[paqueteEnEntrega].intentos
+		     	tipoPaq := camionp.regi[camionp.carga[paqueteEnEntrega]].tipo
+		     	intentPaq := camionp.regi[camionp.carga[paqueteEnEntrega]].intentos
 		     	if (tipoPaq == "retail" && intentPaq >= 3) || (tipoPaq != "retail" && intentPaq >= 2){
 		     		camionp.cargaLenght = camionp.cargaLenght - 1
-		     		cargaNoEntregada = append(cargaNoEntregada,paqueteEnEntrega)
+		     		cargaNoEntregada = append(cargaNoEntregada,camionp.carga[paqueteEnEntrega])
 		     		camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1] 
 				    camionp.carga[len(camionp.carga)-1] = 0   
 				    camionp.carga = camionp.carga[:len(camionp.carga)-1] 
@@ -142,6 +144,7 @@ func camionLaborando(tipo string,waitFor2 float64){
 		     	camionp.estado = "Central"
 		     	for i := 0; i < len(cargaEntregada); i++ {
 		     		time.Sleep(2 * time.Second)
+		     		fmt.Println("justo antes de entrega")
 		     		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			        defer cancel()
 		     		r, err := c.Report(ctx, &pb.ReportDelivery{IdPaquete : camionp.regi[cargaEntregada[i]].idPaquete,
@@ -153,6 +156,7 @@ func camionLaborando(tipo string,waitFor2 float64){
 		     	}
 		     	for j := 0; j < len(cargaNoEntregada); j++ {
 		     		time.Sleep(2 * time.Second)
+		     		fmt.Println("justo antes de No entrega")
 		     		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			        defer cancel()
 		     		r, err := c.Report(ctx, &pb.ReportDelivery{IdPaquete : camionp.regi[cargaNoEntregada[j]].idPaquete,
