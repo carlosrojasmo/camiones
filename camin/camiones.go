@@ -9,6 +9,8 @@ import (
 	"math/rand"
 	"strconv"
 	"log"
+	"bufio"
+	"strings"
 	"google.golang.org/grpc"
 	pb "../proto"
 )
@@ -20,7 +22,7 @@ const (
 var wg = &sync.WaitGroup{}
 
 
-type entradaRegistroPorCamion struct {
+type entradaRegistroPorCamion struct { //Structura de cada fila en el registro del camion
 	idPaquete string
 	tipo string
 	valor int64
@@ -37,7 +39,7 @@ func newEntrada(idPaquete string, tipo string, valor int64,origen string,destino
 	return &entrada
 }
 
-type camion struct{
+type camion struct{//Structura para representar un camion
 	tipo string
 	estado string
 	regi []entradaRegistroPorCamion
@@ -53,7 +55,7 @@ func newCamion(tipo string) *camion{
 
 /*Esta funcion simula el funcionamiento de un camion ,recibe el tipo de camion 
 ,la epspera para recibir un segundo paquete .*/
-func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64){
+func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64,idCamion int){
 	defer wg.Done()
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
@@ -69,6 +71,7 @@ func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64){
 	cargaNoEntregada := []int{}
 	s := rand.NewSource(time.Now().UnixNano())
     r := rand.New(s)
+    fmt.Println("El Camion ",idCamion," del tipo ",camionp.tipo," empieza su jornada")
 	for {
 		if camionp.estado == "Central" {//si el camion esta en Central este pide paquetes periodicamente
 			//pedir
@@ -85,13 +88,15 @@ func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64){
 				camionp.regi = append(camionp.regi, *newEntrada(r.IdPaquete, r.Tipo, r.Valor,r.Origen,r.Destino))
 				camionp.carga = append(camionp.carga,len(camionp.regi)-1)//En el atributo regi guardamos la info del paquete
 				                                                      //y en el atributo carga guardamos su indice en regi
-				if camionp.cargaLenght == 0{ //Si fue el primer paquete en ingresar empesamos a esperar un segundo paquete
+				fmt.Println("El Camion ",idCamion," del tipo ",camionp.tipo," fue cargado con el paquete ",r.GetIdPaquete())
+				if camionp.cargaLenght == 0{ //Si fue el primer paquete en ingresar empezamos a esperar un segundo paquete
 					startwait = time.Now()
 				}
 				camionp.cargaLenght = camionp.cargaLenght + 1 //Aumentamos el tamaño de la carga
 				if camionp.cargaLenght == 2 { //si llego el 2 paquete el camion sale
 					camionp.estado = "Reparto"
 					first = 1
+					fmt.Println("El Camion ",idCamion," del tipo ",camionp.tipo," sale de la Central con 2 paquetes ")
 					
 				} 
 			}
@@ -100,6 +105,7 @@ func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64){
 				if dif.Seconds() > waitFor2  {
 					camionp.estado = "Reparto"
 					first = 1
+					fmt.Println("El Camion ",idCamion," del tipo ",camionp.tipo," sale de la Central con 1 paquete")
 				}
 			}
 		} else {
@@ -126,6 +132,10 @@ func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64){
 				camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1]  //el posterior reporte
 				camionp.carga[len(camionp.carga)-1] = 0   
 				camionp.carga = camionp.carga[:len(camionp.carga)-1] //Las 3 lineas anteriores borran el paquete de la carga
+				fmt.Println("El paquete ",camionp.regi[camionp.carga[paqueteEnEntrega]].idPaquete," fue entregado")
+				fec,mes,dia := camionp.regi[camionp.carga[paqueteEnEntrega]].entrega.Date()
+				hor,min,seg := camionp.regi[camionp.carga[paqueteEnEntrega]].entrega.Clock()
+				fmt.Println("Fecha/Hora: ",fec,"-",mes,"-",dia,"/",hor,":",min,":",seg)
 		     } else { //Caso contrario 
 		     	tipoPaq := camionp.regi[camionp.carga[paqueteEnEntrega]].tipo 
 		     	intentPaq := camionp.regi[camionp.carga[paqueteEnEntrega]].intentos
@@ -135,11 +145,16 @@ func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64){
 		     		camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1] 
 				    camionp.carga[len(camionp.carga)-1] = 0   
 				    camionp.carga = camionp.carga[:len(camionp.carga)-1]  //Eliminamos el elemento de la carga
+				    fmt.Println("El paquete ",camionp.regi[camionp.carga[paqueteEnEntrega]].idPaquete," No fue entregado")
+				    fec,mes,dia := camionp.regi[camionp.carga[paqueteEnEntrega]].entrega.Date()
+				    hor,min,seg := camionp.regi[camionp.carga[paqueteEnEntrega]].entrega.Clock()
+				    fmt.Println("Fecha/Hora: ",fec,"-",mes,"-",dia,"/",hor,":",min,":",seg)
 		     	} 
 		     	first = -first
 		     }
 		     if camionp.cargaLenght == 0 {// Cuando se acaba la carga el camion vuelve a la central
 		     	camionp.estado = "Central"
+		     	fmt.Println("El Camion ",idCamion," del tipo ",camionp.tipo," vuelve a la Central")
 		     	for i := 0; i < len(cargaEntregada); i++ {//Reportamos los paquetes entregados
 		     		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			        defer cancel()
@@ -172,34 +187,34 @@ func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64){
 
  func main() {
 
- 	waitFor2 := 30 
+ 	reader := bufio.NewReader(os.Stdin)
+    fmt.Println("Camiones")
+    fmt.Println("---------------------")
 
- 	waitForDeliverPack := 10
-
- 	fmt.Println(waitForDeliverPack)
-
-	if len(os.Args) > 1 {
-		wait,err := strconv.Atoi(os.Args[1])
-		if err != nil {
-			wait = 30
-		}
-		waitFor2 = wait
-	}
-
-	fmt.Println(waitFor2)
-
+    
+    fmt.Print("Ingresa la espera para un segundo paquete: ") //se pide la espera por un segundo paquete despues de recibir el
+    input1, _ := reader.ReadString('\n')                             //primer paquete
+    input1 = strings.Replace(input1, "\n", "", -1)
+    input1 = strings.Replace(input1, "\r", "", -1)
+    waitFor2 , _ := strconv.Atoi(input1)
+    fmt.Print("Ingresa la demora de entregar  un paquete: ") //se pide cuanto se demora un camion en entregar un paquete
+    input2 , _ := reader.ReadString('\n')
+    input2 = strings.Replace(input2, "\n", "", -1)
+    input2 = strings.Replace(input2, "\r", "", -1)
+    waitForDeliverPack , _ := strconv.Atoi(input2)
+    
 	wg.Add(1)
-	go camionLaborando("normal",float64(waitFor2),float64(waitForDeliverPack)) 
+	go camionLaborando("normal",float64(waitFor2),float64(waitForDeliverPack),1) 
 
 	time.Sleep(6 * time.Second)
 
     wg.Add(1)
-	go camionLaborando("retail",float64(waitFor2),float64(waitForDeliverPack))
+	go camionLaborando("retail",float64(waitFor2),float64(waitForDeliverPack),2)
 
 	time.Sleep(6 * time.Second)
 
     wg.Add(1)
-	go camionLaborando("retail",float64(waitFor2),float64(waitForDeliverPack))
+	go camionLaborando("retail",float64(waitFor2),float64(waitForDeliverPack),3)
 
     wg.Wait()
 	fmt.Println(waitFor2)
