@@ -123,6 +123,7 @@ func camionLaborando(tipo string,waitFor2 float64){
 			recibido := r.Intn(100)
 			fmt.Println(recibido)
 			if recibido < 80 {
+				camionp.regi[camionp.carga[paqueteEnEntrega]].entrega = time.Now()
 				camionp.cargaLenght = camionp.cargaLenght - 1
 				cargaEntregada = append(cargaEntregada,camionp.carga[paqueteEnEntrega])
 				camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1] 
