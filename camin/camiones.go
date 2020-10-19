@@ -53,7 +53,7 @@ func newCamion(tipo string) *camion{
 
 /*Esta funcion simula el funcionamiento de un camion ,recibe el tipo de camion 
 ,la epspera para recibir un segundo paquete .*/
-func camionLaborando(tipo string,waitFor2 float64){
+func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64){
 	defer wg.Done()
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
@@ -116,7 +116,7 @@ func camionLaborando(tipo string,waitFor2 float64){
 			}
 			//Aumentamos en 1 la cantidad de intentos del paquete 
 			camionp.regi[camionp.carga[paqueteEnEntrega]].intentos = camionp.regi[camionp.carga[paqueteEnEntrega]].intentos + 1
-			time.Sleep(10 * time.Second) //Simulamos la espera en que el camion entrega el paquete
+			time.Sleep(time.Duration(waitForDeliverPack) * time.Second) //Simulamos la espera en que el camion entrega el paquete
 			recibido := r.Intn(100) //Con un random determinamos si este fue recibido
 	
 			if recibido < 80 { //El 80% de las veces es recibido
@@ -134,37 +134,35 @@ func camionLaborando(tipo string,waitFor2 float64){
 		     		cargaNoEntregada = append(cargaNoEntregada,camionp.carga[paqueteEnEntrega])
 		     		camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1] 
 				    camionp.carga[len(camionp.carga)-1] = 0   
-				    camionp.carga = camionp.carga[:len(camionp.carga)-1] 
+				    camionp.carga = camionp.carga[:len(camionp.carga)-1]  //Eliminamos el elemento de la carga
 		     	} 
 		     	first = -first
 		     }
-		     if camionp.cargaLenght == 0 {
+		     if camionp.cargaLenght == 0 {// Cuando se acaba la carga el camion vuelve a la central
 		     	camionp.estado = "Central"
-		     	for i := 0; i < len(cargaEntregada); i++ {
-		     		time.Sleep(2 * time.Second)
-		     		fmt.Println("justo antes de entrega")
+		     	for i := 0; i < len(cargaEntregada); i++ {//Reportamos los paquetes entregados
 		     		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			        defer cancel()
-		     		r, err := c.Report(ctx, &pb.ReportDelivery{IdPaquete : camionp.regi[cargaEntregada[i]].idPaquete,
+		     		_ , err := c.Report(ctx, &pb.ReportDelivery{IdPaquete : camionp.regi[cargaEntregada[i]].idPaquete,
 		     		 Entregado : true , Intentos : int64(camionp.regi[cargaEntregada[i]].intentos)})
-		     		fmt.Println(r)
-		     		if err != nil {
-		     			log.Fatalf("could not greet: %v", err)
+		     		if err != nil { //en caso de que falle el reporte reintentamos
+		     			fmt.Println("could not greet:", err)
+		     			fmt.Println("Reintentando")
+		     			i = i - 1
 		     		}
 		     	}
-		     	for j := 0; j < len(cargaNoEntregada); j++ {
-		     		time.Sleep(2 * time.Second)
-		     		fmt.Println("justo antes de No entrega")
+		     	for j := 0; j < len(cargaNoEntregada); j++ {//Reportamos los no entregados
 		     		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			        defer cancel()
-		     		r, err := c.Report(ctx, &pb.ReportDelivery{IdPaquete : camionp.regi[cargaNoEntregada[j]].idPaquete,
+		     		_ , err := c.Report(ctx, &pb.ReportDelivery{IdPaquete : camionp.regi[cargaNoEntregada[j]].idPaquete,
 		     		 Entregado : false ,Intentos : int64(camionp.regi[cargaNoEntregada[j]].intentos)})
-		     		fmt.Println(r)
-		     		if err != nil {
-		     			log.Fatalf("could not greet: %v", err)
+		     		if err != nil { //en caso de que falle el reporte reintentamos
+		     			fmt.Println("could not greet:", err)
+		     			fmt.Println("Reintentando")
+		     			j = j - 1
 		     		}
 		    	}
-		    	cargaEntregada = []int{}
+		    	cargaEntregada = []int{} //Vaciamos cargaEntregada y cargaNoEntregada
 	            cargaNoEntregada = []int{}
 			}
 	    }
@@ -176,7 +174,9 @@ func camionLaborando(tipo string,waitFor2 float64){
 
  	waitFor2 := 30 
 
- 	fmt.Println(waitFor2)
+ 	waitForDeliverPack := 10
+
+ 	fmt.Println(waitForDeliverPack)
 
 	if len(os.Args) > 1 {
 		wait,err := strconv.Atoi(os.Args[1])
@@ -189,17 +189,17 @@ func camionLaborando(tipo string,waitFor2 float64){
 	fmt.Println(waitFor2)
 
 	wg.Add(1)
-	go camionLaborando("normal",float64(waitFor2)) 
+	go camionLaborando("normal",float64(waitFor2),float64(waitForDeliverPack)) 
 
 	time.Sleep(6 * time.Second)
 
     wg.Add(1)
-	go camionLaborando("retail",float64(waitFor2))
+	go camionLaborando("retail",float64(waitFor2),float64(waitForDeliverPack))
 
 	time.Sleep(6 * time.Second)
 
     wg.Add(1)
-	go camionLaborando("retail",float64(waitFor2))
+	go camionLaborando("retail",float64(waitFor2),float64(waitForDeliverPack))
 
     wg.Wait()
 	fmt.Println(waitFor2)
