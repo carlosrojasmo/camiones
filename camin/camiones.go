@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	address  = "localhost:50054"
+	address  = "localhost:50051"
 )
 
 var wg = &sync.WaitGroup{}
@@ -23,7 +23,7 @@ var wg = &sync.WaitGroup{}
 type entradaRegistroPorCamion struct {
 	idPaquete string
 	tipo string
-	valor int
+	valor int64
 	origen string
 	destino string
 	intentos int
@@ -31,7 +31,7 @@ type entradaRegistroPorCamion struct {
 
 }
 
-func newEntrada(idPaquete string, tipo string, valor int,origen string,destino string) *entradaRegistroPorCamion{
+func newEntrada(idPaquete string, tipo string, valor int64,origen string,destino string) *entradaRegistroPorCamion{
 	entrada := entradaRegistroPorCamion{idPaquete: idPaquete, tipo: tipo,valor: valor,origen : origen,destino : destino}
 	entrada.intentos = 0
 	return &entrada
@@ -54,24 +54,26 @@ func newCamion(tipo string) *camion{
 
 func camionLaborando(tipo string,waitFor2 float64){
 	defer wg.Done()
+	fmt.Println("1")
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
-
+    fmt.Println("2")
 	defer conn.Close()
-	c := pb.NewCamionDeliveryClient(conn)
-
+	c := pb.NewOrdenServiceClient(conn)
+    fmt.Println(3)
     //ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	//defer cancel()
 	camionp := newCamion(tipo)
 	startwait := time.Now()
-	first := 1
+	var first int64
+	first = 1
 	cargaEntregada := []int{}
 	cargaNoEntregada := []int{}
 	s := rand.NewSource(time.Now().UnixNano())
     r := rand.New(s)
-	fmt.Println(camionp.tipo)
+	fmt.Println("4")
 	for {
 		fmt.Println("camionp.tipo")
 		if camionp.estado == "Central" {
@@ -81,10 +83,10 @@ func camionLaborando(tipo string,waitFor2 float64){
 			defer cancel()
 			r, err := c.GetPack(ctx, &pb.AskForPack{Tipo : camionp.tipo})
 	        if err != nil {
-	        	fmt.Println("could not greet")
+	        	log.Fatalf("could not greet: %v", err)
 	        }
 			if err == nil && r.GetIdPaquete() != "400" { // si salio bien el pedir
-				camionp.regi = append(camionp.regi, *newEntrada("idPaquete string", "tipo string", 10,"micasa","tucasa"))
+				camionp.regi = append(camionp.regi, *newEntrada(r.IdPaquete, r.Tipo, r.Valor,r.Origen,r.Destino))
 				camionp.carga = append(camionp.carga,len(camionp.regi)-1)
 				if camionp.cargaLenght == 0{
 					startwait = time.Now()
@@ -95,7 +97,7 @@ func camionLaborando(tipo string,waitFor2 float64){
 					first = 1
 					//elegir orden
 				} 
-				fmt.Println(camionp.regi[0])
+				fmt.Println(camionp.regi)
 			}
 			if camionp.cargaLenght == 1 {
 				dif :=  time.Now().Sub(startwait)
