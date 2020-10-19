@@ -51,89 +51,86 @@ func newCamion(tipo string) *camion{
 
 }
 
-
+/*Esta funcion simula el funcionamiento de un camion ,recibe el tipo de camion 
+,la epspera para recibir un segundo paquete .*/
 func camionLaborando(tipo string,waitFor2 float64){
 	defer wg.Done()
-	fmt.Println("1")
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
-    fmt.Println("2")
 	defer conn.Close()
 	c := pb.NewOrdenServiceClient(conn)
-    fmt.Println(3)
-    //ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	//defer cancel()
-	camionp := newCamion(tipo)
-	startwait := time.Now()
-	var first int64
+	camionp := newCamion(tipo) //Creamos nuestro camion
+	startwait := time.Now() //Definimos starwait
+	var first int64 // Esta variable nos ayudara a elegir que paquete entregamos primero
 	first = 1
-	cargaEntregada := []int{}
+	cargaEntregada := []int{} //Estos 2 slices nos indicara que carga fue entregada y cual no
 	cargaNoEntregada := []int{}
 	s := rand.NewSource(time.Now().UnixNano())
     r := rand.New(s)
-	fmt.Println("4")
 	for {
-		fmt.Println("camionp.tipo")
-		if camionp.estado == "Central" {
+		if camionp.estado == "Central" {//si el camion esta en Central este pide paquetes periodicamente
 			//pedir
 			time.Sleep(4 * time.Second)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			r, err := c.GetPack(ctx, &pb.AskForPack{Tipo : camionp.tipo})
+			r, err := c.GetPack(ctx, &pb.AskForPack{Tipo : camionp.tipo}) //Pedimos paquete
 	        if err != nil {
-	        	log.Fatalf("could not greet: %v", err)
+	        	fmt.Println("Fallo de conexion en pedir paquete")
+		        fmt.Println("could not greet: ", err)
 	        }
-	        fmt.Println(camionp.regi)
-			if err == nil && r.GetIdPaquete() != "400" && r.GetIdPaquete() != ""{ // si salio bien el pedir
+	        
+			if err == nil && r.GetIdPaquete() != "400" && r.GetIdPaquete() != ""{ // Si salio bien el pedir
 				camionp.regi = append(camionp.regi, *newEntrada(r.IdPaquete, r.Tipo, r.Valor,r.Origen,r.Destino))
-				camionp.carga = append(camionp.carga,len(camionp.regi)-1)
-				fmt.Println(len(camionp.regi)-1)
-				if camionp.cargaLenght == 0{
+				camionp.carga = append(camionp.carga,len(camionp.regi)-1)//En el atributo regi guardamos la info del paquete
+				                                                      //y en el atributo carga guardamos su indice en regi
+				if camionp.cargaLenght == 0{ //Si fue el primer paquete en ingresar empesamos a esperar un segundo paquete
 					startwait = time.Now()
 				}
-				camionp.cargaLenght = camionp.cargaLenght + 1
-				if camionp.cargaLenght == 2 {
+				camionp.cargaLenght = camionp.cargaLenght + 1 //Aumentamos el tamaño de la carga
+				if camionp.cargaLenght == 2 { //si llego el 2 paquete el camion sale
 					camionp.estado = "Reparto"
 					first = 1
-					//elegir orden
+					
 				} 
-				fmt.Println(camionp.regi)
 			}
-			if camionp.cargaLenght == 1 {
-				dif :=  time.Now().Sub(startwait)
+			if camionp.cargaLenght == 1 { //Calculamos la diferencia en el tiempo que empezamos a esperar y 
+				dif :=  time.Now().Sub(startwait) //el tiempo actual si es mayor a waitfor2 el camion sale
 				if dif.Seconds() > waitFor2  {
 					camionp.estado = "Reparto"
 					first = 1
 				}
 			}
 		} else {
-			//elegir paquete con mayor digni
+			//Primero elegimos que paquete se entrega primero
 			paqueteEnEntrega := 0
-			if camionp.cargaLenght > 1 {
-
+			if camionp.cargaLenght > 1 {//si el camion lleva un paquete no es necesario elegir
+                /*Si el camion esta recien saliendo de la central se entrega el paquete con el mayor valor
+                en caso contrario ,si fallamos un intento, la variable first cambia el sentido de la condicion 
+                pasando a entregar el paquete de menor valor*/ 
 				if camionp.regi[camionp.carga[0]].valor * first < camionp.regi[camionp.carga[1]].valor * first {
 					paqueteEnEntrega = 1
 
 				}
 			}
+			//Aumentamos en 1 la cantidad de intentos del paquete 
 			camionp.regi[camionp.carga[paqueteEnEntrega]].intentos = camionp.regi[camionp.carga[paqueteEnEntrega]].intentos + 1
-			time.Sleep(10 * time.Second)
-			recibido := r.Intn(100)
-			fmt.Println(recibido)
-			if recibido < 80 {
-				camionp.regi[camionp.carga[paqueteEnEntrega]].entrega = time.Now()
-				camionp.cargaLenght = camionp.cargaLenght - 1
-				cargaEntregada = append(cargaEntregada,camionp.carga[paqueteEnEntrega])
-				camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1] 
+			time.Sleep(10 * time.Second) //Simulamos la espera en que el camion entrega el paquete
+			recibido := r.Intn(100) //Con un random determinamos si este fue recibido
+	
+			if recibido < 80 { //El 80% de las veces es recibido
+				camionp.regi[camionp.carga[paqueteEnEntrega]].entrega = time.Now() //Marcamos la fecha de entrega
+				camionp.cargaLenght = camionp.cargaLenght - 1 //Lo descontamos de la carga
+				cargaEntregada = append(cargaEntregada,camionp.carga[paqueteEnEntrega]) //Lo añadimos a cargaEntregada para 
+				camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1]  //el posterior reporte
 				camionp.carga[len(camionp.carga)-1] = 0   
-				camionp.carga = camionp.carga[:len(camionp.carga)-1] 
-		     } else {
-		     	tipoPaq := camionp.regi[camionp.carga[paqueteEnEntrega]].tipo
+				camionp.carga = camionp.carga[:len(camionp.carga)-1] //Las 3 lineas anteriores borran el paquete de la carga
+		     } else { //Caso contrario 
+		     	tipoPaq := camionp.regi[camionp.carga[paqueteEnEntrega]].tipo 
 		     	intentPaq := camionp.regi[camionp.carga[paqueteEnEntrega]].intentos
-		     	if (tipoPaq == "retail" && intentPaq >= 3) || (tipoPaq != "retail" && intentPaq >= 2){
-		     		camionp.cargaLenght = camionp.cargaLenght - 1
+		     	if (tipoPaq == "retail" && intentPaq >= 3) || (tipoPaq != "retail" && intentPaq >= 2){ //verificamos si supero
+		     		camionp.cargaLenght = camionp.cargaLenght - 1                                //el numero de intentos limite
 		     		cargaNoEntregada = append(cargaNoEntregada,camionp.carga[paqueteEnEntrega])
 		     		camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1] 
 				    camionp.carga[len(camionp.carga)-1] = 0   
