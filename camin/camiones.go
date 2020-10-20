@@ -128,11 +128,11 @@ func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64,idC
 			if recibido < 80 { //El 80% de las veces es recibido
 				camionp.regi[camionp.carga[paqueteEnEntrega]].entrega = time.Now() //Marcamos la fecha de entrega
 				camionp.cargaLenght = camionp.cargaLenght - 1 //Lo descontamos de la carga
-				cargaEntregada = append(cargaEntregada,camionp.carga[paqueteEnEntrega]) //Lo añadimos a cargaEntregada para 
-				camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1]  //el posterior reporte
+				cargaEntregada = append(cargaEntregada,camionp.carga[paqueteEnEntrega]) //Lo añadimos a cargaEntregada para
+				fmt.Println("El paquete ",camionp.regi[camionp.carga[paqueteEnEntrega]].idPaquete," fue entregado") //el posterior reporte
+				camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1]  
 				camionp.carga[len(camionp.carga)-1] = 0   
-				camionp.carga = camionp.carga[:len(camionp.carga)-1] //Las 3 lineas anteriores borran el paquete de la carga
-				fmt.Println("El paquete ",camionp.regi[camionp.carga[paqueteEnEntrega]].idPaquete," fue entregado")
+				camionp.carga = camionp.carga[:len(camionp.carga)-1] //Las 3 lineas anteriores borran el paquete de la carga				
 				fec,mes,dia := camionp.regi[camionp.carga[paqueteEnEntrega]].entrega.Date()
 				hor,min,seg := camionp.regi[camionp.carga[paqueteEnEntrega]].entrega.Clock()
 				fmt.Println("Fecha/Hora: ",fec,"-",mes,"-",dia,"/",hor,":",min,":",seg)
@@ -146,9 +146,6 @@ func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64,idC
 				    camionp.carga[len(camionp.carga)-1] = 0   
 				    camionp.carga = camionp.carga[:len(camionp.carga)-1]  //Eliminamos el elemento de la carga
 				    fmt.Println("El paquete ",camionp.regi[camionp.carga[paqueteEnEntrega]].idPaquete," No fue entregado")
-				    fec,mes,dia := camionp.regi[camionp.carga[paqueteEnEntrega]].entrega.Date()
-				    hor,min,seg := camionp.regi[camionp.carga[paqueteEnEntrega]].entrega.Clock()
-				    fmt.Println("Fecha/Hora: ",fec,"-",mes,"-",dia,"/",hor,":",min,":",seg)
 		     	} 
 		     	first = -first
 		     }
