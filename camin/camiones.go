@@ -142,10 +142,11 @@ func camionLaborando(tipo string,waitFor2 float64,waitForDeliverPack float64,idC
 		     	if (tipoPaq == "retail" && intentPaq >= 3) || (tipoPaq != "retail" && intentPaq >= 2){ //verificamos si supero
 		     		camionp.cargaLenght = camionp.cargaLenght - 1                                //el numero de intentos limite
 		     		cargaNoEntregada = append(cargaNoEntregada,camionp.carga[paqueteEnEntrega])
+		     		fmt.Println("El paquete ",camionp.regi[camionp.carga[paqueteEnEntrega]].idPaquete," No fue entregado")
 		     		camionp.carga[paqueteEnEntrega] = camionp.carga[len(camionp.carga)-1] 
 				    camionp.carga[len(camionp.carga)-1] = 0   
 				    camionp.carga = camionp.carga[:len(camionp.carga)-1]  //Eliminamos el elemento de la carga
-				    fmt.Println("El paquete ",camionp.regi[camionp.carga[paqueteEnEntrega]].idPaquete," No fue entregado")
+				    
 		     	} 
 		     	first = -first
 		     }
